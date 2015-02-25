@@ -1,8 +1,9 @@
 class Piece
-  attr_reader :color
+  attr_reader :color, :position
 
-  def initialize(color)
+  def initialize(color, position)
     @color = color
+    @position = position
   end
 
   def white?
@@ -25,12 +26,24 @@ class Piece
     move_arr
   end
 
+  def moves(board)
+    raise NotImplementedError.new
+  end
+
+  def deep_dup
+    self.class.new(@color, @position.dup)
+  end
+
+  def set_position(dest)
+    @position = dest
+  end
+
 end
 
 class SlidingPiece < Piece
-  def moves(start, board)
+  def moves(board)
     moves = []
-    x, y = start
+    x, y = position
     directions.each do |x_shift, y_shift|
       (1..7).each do |n|
         pos = [x + x_shift * n, y + y_shift * n]
@@ -38,7 +51,7 @@ class SlidingPiece < Piece
         break unless Board.in_bounds?(pos) && board[pos].nil?
       end
     end
-    moves
+    limit_moves(moves, board)
   end
 end
 
@@ -48,12 +61,13 @@ class SteppingPiece < Piece
     raise NotImplementedError.new
   end
 
-  def moves(start, board)
-    x, y = start
+  def moves(board)
+    x, y = position
     moves = offsets.map do |x_shift, y_shift|
       [x + x_shift, y + y_shift]
     end
-    moves.select { |move| Board.in_bounds?(move) }
+    moves.select! { |move| Board.in_bounds?(move) }
+    limit_moves(moves, board)
   end
 end
 
@@ -119,10 +133,10 @@ end
 
 class Pawn < SteppingPiece
 
-  def moves(start, board)
-    x, y = start
+  def moves(board)
+    x, y = position
     offsets = [offset]
-    offsets += first_move(start) unless @has_moved
+    offsets += first_move unless @has_moved
     moves = []
     offsets.each do |x_shift, y_shift|
       pos = [x + x_shift, y + y_shift]
@@ -130,10 +144,7 @@ class Pawn < SteppingPiece
     end
     attacks.each do |x_shift, y_shift|
       pos = [x + x_shift, y + y_shift]
-      if Board.in_bounds?(pos) &&
-         !board[pos].nil? &&
-         board[pos].color != color
-
+      if Board.in_bounds?(pos) && !board[pos].nil? && board[pos].color != color
          moves << pos
       end
     end
@@ -148,10 +159,10 @@ class Pawn < SteppingPiece
     white? ? [-1,0] : [1,0]
   end
 
-  def first_move(start)
-    if white? && start.first == 6
+  def first_move
+    if white? && position.first == 6
       [[-2, 0]]
-    elsif black? && start.first == 1
+    elsif black? && position.first == 1
       [[2, 0]]
     else
       []

@@ -5,16 +5,10 @@ class Board
   end
 
   def setup
-    royalty = [:black, :white].map do |color|
-       [Rook.new(color), Knight.new(color), Bishop.new(color),
-       King.new(color), Queen.new(color), Bishop.new(color),
-       Knight.new(color), Rook.new(color)]
-    end
-
-    @board[0] = royalty[0]
-    @board[-1]  = royalty[-1]
-    @board[-2] = Array.new(8) { Pawn.new(:white) }
-    @board[1]  = Array.new(8) { Pawn.new(:black) }
+    @board[0] = add_royalty(0, :black)
+    @board[7] = add_royalty(7, :white)
+    @board[1] = add_pawns(1, :black)
+    @board[6] = add_pawns(6, :white)
   end
 
   def deep_dup
@@ -22,7 +16,8 @@ class Board
     (0..7).each do |x|
       (0..7).each do |y|
         pos = [x,y]
-        new_board[pos] = self[pos]
+        piece = self[pos]
+        new_board[pos] = piece.nil? ? nil : piece.deep_dup
       end
     end
 
@@ -39,17 +34,18 @@ class Board
     @board[x][y] = value
   end
 
-  def force_move(start, dest)
-    piece = self[start]
+  def force_move(piece, dest)
     self[dest] = piece
-    self[start] = nil
+    self[piece.position] = nil
   end
 
   def make_move(start, dest)
     piece = self[start]
-    moves = check_moves(start)
+    moves = piece.moves(self)
+    moves = check_moves(piece, moves)
     puts piece.render
     if moves.include?(dest)
+      piece.set_position(dest)
       self[dest] = piece
       self[start] = nil
     else
@@ -58,29 +54,28 @@ class Board
   end
 
   def in_checkmate?(color)
-    (0..7).each do |x|
-      (0..7).each do |y|
-        pos = [x, y]
-        piece = self[pos]
-        next if piece.nil? || piece.color != color
-        return false unless check_moves([x,y]).empty?
-      end
+    my_pieces(color).each do |piece|
+      return false unless check_moves(piece, piece.moves(self)).empty?
     end
     true
   end
 
-  def valid_moves(start)
-    piece = self[start]
-    moves = piece.moves(start, self)
-    moves = piece.limit_moves(moves, self)
+  def pieces
+    @board.flatten.compact
   end
 
-  def check_moves(start)
-    piece = self[start]
-    moves = valid_moves(start)
+  def my_pieces(color)
+    pieces.select { |piece| piece.color == color }
+  end
+
+  def enemy_pieces(color)
+    pieces.select { |piece| piece.color != color }
+  end
+
+  def check_moves(piece, moves)
     moves.reject do |move|
       new_board = self.deep_dup
-      new_board.force_move(start, move)
+      new_board.force_move(piece, move)
       new_board.in_check?(piece.color)
     end
   end
@@ -121,25 +116,27 @@ class Board
   end
 
   def in_check?(color)
-    (0..7).each do |x|
-      (0..7).each do |y|
-        pos = [x, y]
-        piece = self[pos]
-        next if piece.nil?
-        if piece.color != color
-          moves = valid_moves(pos)
-          moves.each do |move|
-            target_piece = self[move]
-            if target_piece.class == King &&
-               target_piece.color == color
-              return true
-            end
-          end
-        end
-      end
+    king = find_king(color)
+    enemy_pieces(color).any? do |piece|
+      piece.moves(self).include?(king.position)
     end
-    false
   end
 
+  private
+
+  def add_royalty(row, color)
+    royalty = [Rook, Knight, Bishop, King, Queen, Bishop, Knight, Rook]
+    royalty.each_with_index.map do |type, col|
+      type.new(color, [row, col])
+    end
+  end
+
+  def add_pawns(row, color)
+    Array.new(8) { |col| Pawn.new(color, [row, col]) }
+  end
+
+  def find_king(color)
+    my_pieces(color).find { |piece| piece.is_a? King }
+  end
 
 end
