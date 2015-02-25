@@ -12,15 +12,8 @@ class Board
   end
 
   def deep_dup
-    new_board=Board.new
-    (0..7).each do |x|
-      (0..7).each do |y|
-        pos = [x,y]
-        piece = self[pos]
-        new_board[pos] = piece.nil? ? nil : piece.deep_dup
-      end
-    end
-
+    new_board = Board.new
+    pieces.each { |piece| new_board[piece.position.dup] = piece.deep_dup }
     new_board
   end
 
@@ -37,6 +30,7 @@ class Board
   def force_move(piece, dest)
     self[dest] = piece
     self[piece.position] = nil
+    piece.set_position(dest.dup)
   end
 
   def make_move(start, dest)
@@ -51,13 +45,6 @@ class Board
     else
       raise InputError.new "Invalid destination"
     end
-  end
-
-  def in_checkmate?(color)
-    my_pieces(color).each do |piece|
-      return false unless check_moves(piece, piece.moves(self)).empty?
-    end
-    true
   end
 
   def pieces
@@ -75,8 +62,21 @@ class Board
   def check_moves(piece, moves)
     moves.reject do |move|
       new_board = self.deep_dup
-      new_board.force_move(piece, move)
+      new_board.force_move(piece.deep_dup, move)
       new_board.in_check?(piece.color)
+    end
+  end
+
+  def in_check?(color)
+    king = find_king(color)
+    enemy_pieces(color).any? do |piece|
+      piece.moves(self).include?(king.position)
+    end
+  end
+
+  def in_checkmate?(color)
+    my_pieces(color).all? do |piece|
+      check_moves(piece, piece.moves(self)).empty?
     end
   end
 
@@ -115,10 +115,12 @@ class Board
     end
   end
 
-  def in_check?(color)
-    king = find_king(color)
-    enemy_pieces(color).any? do |piece|
-      piece.moves(self).include?(king.position)
+
+  def promote_pawns
+    pieces.each do |piece|
+      if piece.class == Pawn && piece.promotable?
+        self[piece.position] = Queen.new(piece.color, piece.position)
+      end
     end
   end
 
@@ -136,7 +138,7 @@ class Board
   end
 
   def find_king(color)
-    my_pieces(color).find { |piece| piece.is_a? King }
+    my_pieces(color).find { |piece| piece.class == King }
   end
 
 end

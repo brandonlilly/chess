@@ -39,6 +39,7 @@ class Game
         puts e.message
         retry
       end
+      board.promote_pawns
     end
   end
 

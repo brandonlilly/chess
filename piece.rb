@@ -169,6 +169,11 @@ class Pawn < SteppingPiece
     end
   end
 
+  def promotable?
+    (white? && position.first == 0) || (black? && position.first == 7)
+  end
+
+
   def render
     super("♙", "♟")
   end
