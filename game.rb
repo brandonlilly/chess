@@ -31,7 +31,7 @@ class Game
       end
 
       begin
-        move = current_player.get_move
+        move = current_player.get_move(board)
         board.check_start(current_player, move.first)
         board.make_move(move.first, move.last)
         @turn += 1
@@ -49,6 +49,6 @@ class Game
 end
 
 if __FILE__ == $PROGRAM_NAME
-  game = Game.new(Player.new(:white),Player.new(:black))
+  game = Game.new(HumanPlayer.new(:white), ComputerPlayer.new(:black))
   game.play
 end

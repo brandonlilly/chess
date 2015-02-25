@@ -28,6 +28,7 @@ class Board
   end
 
   def force_move(piece, dest)
+    piece = piece.deep_dup
     self[dest] = piece
     self[piece.position] = nil
     piece.set_position(dest.dup)
@@ -62,10 +63,12 @@ class Board
   def check_moves(piece, moves)
     moves.reject do |move|
       new_board = self.deep_dup
-      new_board.force_move(piece.deep_dup, move)
+      new_board.force_move(piece, move)
       new_board.in_check?(piece.color)
     end
   end
+
+
 
   def in_check?(color)
     king = find_king(color)
