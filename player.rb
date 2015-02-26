@@ -41,7 +41,7 @@ class ComputerPlayer < Player
 
   def get_move(board)
     puts "Hmm..."
-    sleep(0.5)
+    sleep(0.15)
 
     try_checking(board) || try_take_piece(board) || try_random(board)
   end
@@ -77,7 +77,5 @@ class ComputerPlayer < Player
       return [piece.position, moves.sample] unless moves.empty?
     end
   end
-
-
 
 end

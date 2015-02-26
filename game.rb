@@ -1,6 +1,7 @@
 require_relative "board.rb"
 require_relative "piece.rb"
 require_relative "player.rb"
+require_relative "ai_player.rb"
 require 'colorize'
 require 'byebug'
 
@@ -49,6 +50,6 @@ class Game
 end
 
 if __FILE__ == $PROGRAM_NAME
-  game = Game.new(HumanPlayer.new(:white), ComputerPlayer.new(:black))
+  game = Game.new(AIPlayer.new(:white), AIPlayer.new(:black))
   game.play
 end

@@ -68,8 +68,6 @@ class Board
     end
   end
 
-
-
   def in_check?(color)
     king = find_king(color)
     enemy_pieces(color).any? do |piece|
@@ -105,6 +103,7 @@ class Board
   end
 
   def display
+    system "clear" or system "cls"
     puts render
   end
 
